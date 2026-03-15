@@ -73,6 +73,7 @@ void blank () { row ( "" ); }
 // menu content
 
 static const std::vector<std::string> MENU_LINES = {
+    "  [0] STATS    Hash-table diagnostics",
     "  [1] ADD      Add a new stock",
     "  [2] DEL      Delete a stock",
     "  [3] IMPORT   Import NASDAQ CSV",
@@ -81,6 +82,7 @@ static const std::vector<std::string> MENU_LINES = {
     "  [6] LIST     List all stocks",
     "  [7] SAVE     Save to file",
     "  [8] LOAD     Load from file",
+    "  [B] BATCH    Batch import from directory",
     "  [9] QUIT",
 };
 

@@ -1,14 +1,15 @@
 CXX      := g++
 CXXFLAGS := -std=c++17 -Wall -Wextra -Wpedantic
 
-SRC_DIR  := src
-INC_DIR  := include
-OBJ_DIR  := obj
+SRC_DIR   := src
+INC_DIR   := include
+OBJ_DIR   := obj
+BUILD_DIR := build
 
 SRCS     := $(wildcard $(SRC_DIR)/*.cpp) main.cpp
 OBJS     := $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRCS))
 DEPS     := $(OBJS:.o=.d)
-TARGET   := stock_manager
+TARGET   := $(BUILD_DIR)/stock_manager
 
 TEST_DIR    := tests
 TEST_SRCS   := $(wildcard $(TEST_DIR)/*.cpp)
@@ -16,7 +17,7 @@ TEST_SRCS   := $(wildcard $(TEST_DIR)/*.cpp)
 LIB_OBJS    := $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(wildcard $(SRC_DIR)/*.cpp))
 TEST_OBJS   := $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(TEST_SRCS))
 TEST_DEPS   := $(TEST_OBJS:.o=.d)
-TEST_TARGET := run_tests
+TEST_TARGET := $(BUILD_DIR)/run_tests
 
 # ── Build modes ──────────────────────────────────────────────────
 # Default: debug
@@ -42,7 +43,7 @@ DEPFLAGS  = -MMD -MP
 all: $(TARGET) $(TEST_TARGET)
 
 # ── Link ─────────────────────────────────────────────────────────
-$(TARGET): $(OBJS)
+$(TARGET): $(OBJS) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 # ── Compile src/*.cpp ────────────────────────────────────────────
@@ -61,8 +62,12 @@ $(OBJ_DIR)/$(TEST_DIR)/%.o: $(TEST_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(DEPFLAGS) -I$(INC_DIR) -c $< -o $@
 
 # ── Link test binary ─────────────────────────────────────────────
-$(TEST_TARGET): $(TEST_OBJS) $(LIB_OBJS)
+$(TEST_TARGET): $(TEST_OBJS) $(LIB_OBJS) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $^ -o $@
+
+# ── Create build dir ─────────────────────────────────────────────
+$(BUILD_DIR):
+	@mkdir -p $@
 
 # ── Include auto-generated dependencies ──────────────────────────
 -include $(DEPS)
@@ -87,7 +92,7 @@ avx2-release:
 
 .PHONY: clean
 clean:
-	$(RM) -r $(OBJ_DIR) $(TARGET) $(TEST_TARGET)
+	$(RM) -r $(OBJ_DIR) $(BUILD_DIR)
 
 .PHONY: help
 help:

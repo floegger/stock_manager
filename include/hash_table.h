@@ -10,6 +10,17 @@
 #include <stdexcept>
 #include <string>
 
+struct TableStats {
+    std::size_t entries      = 0;   // occupied slots
+    std::size_t capacity     = 0;   // total slots
+    std::size_t deleted      = 0;   // tombstone slots
+    double      loadFactor   = 0.0; // entries / capacity
+    double      avgProbeLen  = 0.0; // average probe steps to reach a live key
+    double      avgInsertNs  = 0.0; // nanoseconds per insert  (benchmark)
+    double      avgLookupNs  = 0.0; // nanoseconds per lookup  (benchmark)
+    double      avgDeleteNs  = 0.0; // nanoseconds per delete  (benchmark)
+};
+
 class HashTable {
   public:
     static constexpr uint8_t EMPTY = 0x80;
@@ -35,6 +46,10 @@ class HashTable {
 
     std::size_t size () const noexcept { return size_; }
     std::size_t capacity () const noexcept { return ctrl_.size(); }
+
+    // Collect structural statistics and run a micro-benchmark on all live keys.
+    // benchRounds: how many full insert+lookup+delete cycles to time per key.
+    TableStats tableStats ( int benchRounds = 200 ) const;
 
   private:
     static constexpr double MAX_LOAD = 0.75;

@@ -1,3 +1,4 @@
+#include "../include/batch.h"
 #include "../include/hash_table.h"
 #include "../include/stock.h"
 
@@ -42,6 +43,65 @@ static int s_failed = 0;
         fn();                                                                            \
         std::cout << "[  OK  ] " << #fn << '\n';                                        \
     } while ( 0 )
+
+// ── Batch / filename parser tests ────────────────────────────────
+
+// Happy path: plain name with no extra underscores
+void test_parse_csv_filename_normal () {
+    std::string name, ticker, wkn;
+    CHECK ( parse_csv_filename ( "Apple_Inc._Common_Stock_AAPL_037833.csv", name, ticker, wkn ) );
+    CHECK ( name   == "Apple Inc. Common Stock" );
+    CHECK ( ticker == "AAPL" );
+    CHECK ( wkn    == "037833" );
+}
+
+// Name that itself contains underscores (the download script replaces spaces
+// with underscores, so multiple underscores in the name portion are expected)
+void test_parse_csv_filename_underscores_in_name () {
+    std::string name, ticker, wkn;
+    CHECK ( parse_csv_filename ( "NVIDIA_Corporation_Common_Stock_NVDA_NVDA.csv", name, ticker, wkn ) );
+    CHECK ( name   == "NVIDIA Corporation Common Stock" );
+    CHECK ( ticker == "NVDA" );
+    CHECK ( wkn    == "NVDA" );
+}
+
+// Missing ".csv" extension must be rejected
+void test_parse_csv_filename_no_extension () {
+    std::string name, ticker, wkn;
+    CHECK ( !parse_csv_filename ( "Apple_AAPL_037833", name, ticker, wkn ) );
+}
+
+// Wrong extension must be rejected
+void test_parse_csv_filename_wrong_extension () {
+    std::string name, ticker, wkn;
+    CHECK ( !parse_csv_filename ( "Apple_AAPL_037833.txt", name, ticker, wkn ) );
+}
+
+// Stem with only one underscore (cannot split into three parts)
+void test_parse_csv_filename_too_few_underscores () {
+    std::string name, ticker, wkn;
+    CHECK ( !parse_csv_filename ( "AAPL_037833.csv", name, ticker, wkn ) );
+}
+
+// Any segment being empty after splitting must be rejected
+void test_parse_csv_filename_empty_segment () {
+    std::string name, ticker, wkn;
+    // leading underscore → empty name
+    CHECK ( !parse_csv_filename ( "_AAPL_037833.csv", name, ticker, wkn ) );
+    // empty ticker
+    CHECK ( !parse_csv_filename ( "Apple__037833.csv", name, ticker, wkn ) );
+    // empty wkn
+    CHECK ( !parse_csv_filename ( "Apple_AAPL_.csv", name, ticker, wkn ) );
+}
+
+// Minimal valid filename: one-word name, ticker, wkn — no extra underscores
+void test_parse_csv_filename_minimal () {
+    std::string name, ticker, wkn;
+    CHECK ( parse_csv_filename ( "Foo_BAR_123456.csv", name, ticker, wkn ) );
+    CHECK ( name   == "Foo" );
+    CHECK ( ticker == "BAR" );
+    CHECK ( wkn    == "123456" );
+}
 
 // ── Stock tests ───────────────────────────────────────────────────
 
@@ -240,6 +300,15 @@ void test_ht_save_load_roundtrip () {
 // ── Entry point ───────────────────────────────────────────────────
 
 int main () {
+    std::cout << "\n=== Batch / filename parser tests ===\n";
+    RUN ( test_parse_csv_filename_normal );
+    RUN ( test_parse_csv_filename_underscores_in_name );
+    RUN ( test_parse_csv_filename_no_extension );
+    RUN ( test_parse_csv_filename_wrong_extension );
+    RUN ( test_parse_csv_filename_too_few_underscores );
+    RUN ( test_parse_csv_filename_empty_segment );
+    RUN ( test_parse_csv_filename_minimal );
+
     std::cout << "\n=== Stock tests ===\n";
     RUN ( test_stock_construction );
     RUN ( test_stock_empty_fields_throw );

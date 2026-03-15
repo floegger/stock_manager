@@ -3,6 +3,7 @@
 #include "../include/hash_table.h"
 #include "../include/plot.h"
 #include "../include/stock.h"
+#include "../include/table_stats.h"
 #include "../include/tui.h"
 
 #include <algorithm>

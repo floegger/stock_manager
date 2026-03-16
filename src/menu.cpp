@@ -28,7 +28,8 @@ void run_menu ( HashTable &ht, owner_t &owner ) {
         ss >> cmd;
 
         // normalise to upper-case so "b" and "B" both work
-        for ( auto &c : cmd ) c = static_cast<char> ( toupper ( static_cast<unsigned char> ( c ) ) );
+        for ( auto &c : cmd )
+            c = static_cast<char> ( toupper ( static_cast<unsigned char> ( c ) ) );
 
         output.clear();
         status.clear();
@@ -39,7 +40,8 @@ void run_menu ( HashTable &ht, owner_t &owner ) {
         //  BATCH IMPORT
         if ( cmd == "B" || cmd == "BATCH" ) {
             auto dir = input_screen ( output, status, "Directory of CSV files [../stock_prices/]:" );
-            if ( dir.empty() ) dir = "../stock_prices/";
+            if ( dir.empty() )
+                dir = "../stock_prices/";
             status = "Scanning " + dir + " …";
 
             BatchResult res = batch_import ( dir, ht, owner );
@@ -55,8 +57,8 @@ void run_menu ( HashTable &ht, owner_t &owner ) {
             };
 
             output.push_back ( rowB ( "Imported:", std::to_string ( res.imported ) ) );
-            output.push_back ( rowB ( "Skipped:",  std::to_string ( res.skipped  ) ) );
-            output.push_back ( rowB ( "Failed:",   std::to_string ( res.failed   ) ) );
+            output.push_back ( rowB ( "Skipped:", std::to_string ( res.skipped ) ) );
+            output.push_back ( rowB ( "Failed:", std::to_string ( res.failed ) ) );
             output.push_back ( "" );
 
             // ── per-file detail ───────────────────────────────────────────
@@ -68,28 +70,23 @@ void run_menu ( HashTable &ht, owner_t &owner ) {
             for ( const auto &e : res.entries ) {
                 if ( e.ok ) {
                     if ( okShown < MAX_OK_LINES ) {
-                        output.push_back ( "  \u2713 " + e.ticker + "  " + e.name
-                                           + "  [" + e.wkn + "]" );
+                        output.push_back ( "  \u2713 " + e.ticker + "  " + e.name + "  [" + e.wkn + "]" );
                         ++okShown;
                     } else if ( okShown == MAX_OK_LINES ) {
                         int remaining = res.imported - MAX_OK_LINES;
-                        output.push_back ( "    \u2026 and " + std::to_string ( remaining )
-                                           + " more imported." );
+                        output.push_back ( "    \u2026 and " + std::to_string ( remaining ) + " more imported." );
                         ++okShown;  // only emit once
                     }
                 } else {
-                    std::string prefix = ( e.errMsg == "Already in table \u2013 skipped" )
-                                            ? "  ~ " : "  \u2717 ";
+                    std::string prefix = ( e.errMsg == "Already in table \u2013 skipped" ) ? "  ~ " : "  \u2717 ";
                     output.push_back ( prefix + e.filename + ": " + e.errMsg );
                 }
             }
 
-            status = "Batch import done  \u2013  "
-                     + std::to_string ( res.imported ) + " imported, "
-                     + std::to_string ( res.skipped  ) + " skipped, "
-                     + std::to_string ( res.failed   ) + " failed";
+            status = "Batch import done  \u2013  " + std::to_string ( res.imported ) + " imported, " +
+                     std::to_string ( res.skipped ) + " skipped, " + std::to_string ( res.failed ) + " failed";
 
-        //  STATS
+            //  STATS
         } else if ( cmd == "0" || cmd == "STATS" ) {
             status = "Running diagnostics\u2026";
             TableStats s = ht.tableStats();
@@ -116,51 +113,65 @@ void run_menu ( HashTable &ht, owner_t &owner ) {
             };
 
             // ── header ────────────────────────────────────────────────────
-            output.push_back ( "  \u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557" );
+            output.push_back ( "  "
+                               "\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+                               "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+                               "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557" );
             output.push_back ( "  \u2551      Hash-Table Diagnostics          \u2551" );
-            output.push_back ( "  \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d" );
+            output.push_back ( "  "
+                               "\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+                               "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+                               "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d" );
             output.push_back ( "" );
 
             // ── structural stats ──────────────────────────────────────────
             output.push_back ( "  Structure" );
-            output.push_back ( "  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500" );
-            output.push_back ( rowS ( "Entries (live):",   std::to_string ( s.entries  ) ) );
+            output.push_back ( "  "
+                               "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+                               "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+                               "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500" );
+            output.push_back ( rowS ( "Entries (live):", std::to_string ( s.entries ) ) );
             output.push_back ( rowS ( "Capacity (slots):", std::to_string ( s.capacity ) ) );
-            output.push_back ( rowS ( "Tombstones:",       std::to_string ( s.deleted  ) ) );
-            output.push_back ( rowS ( "Load factor:",      pct ( s.loadFactor )          ) );
-            output.push_back ( rowS ( "Max load factor:",  pct ( 0.75 )                  ) );
+            output.push_back ( rowS ( "Tombstones:", std::to_string ( s.deleted ) ) );
+            output.push_back ( rowS ( "Load factor:", pct ( s.loadFactor ) ) );
+            output.push_back ( rowS ( "Max load factor:", pct ( 0.75 ) ) );
             output.push_back ( "" );
 
             // ── probing stats ─────────────────────────────────────────────
             output.push_back ( "  Probing" );
-            output.push_back ( "  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500" );
+            output.push_back ( "  "
+                               "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+                               "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+                               "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500" );
             {
                 std::ostringstream o;
                 o << std::fixed << std::setprecision ( 2 ) << s.avgProbeLen;
-                output.push_back ( rowS ( "Avg probe groups:",  o.str()    ) );
+                output.push_back ( rowS ( "Avg probe groups:", o.str() ) );
                 output.push_back ( rowS ( "Group size (SIMD):", "32 slots" ) );
             }
             output.push_back ( "" );
 
             // ── timing benchmark ──────────────────────────────────────────
             output.push_back ( "  Timing  (200 rounds \u00d7 all live keys)" );
-            output.push_back ( "  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500" );
+            output.push_back ( "  "
+                               "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+                               "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+                               "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500" );
             output.push_back ( rowS ( "Avg lookup:", fmtNs ( s.avgLookupNs ) ) );
             output.push_back ( rowS ( "Avg insert:", fmtNs ( s.avgInsertNs ) ) );
             output.push_back ( rowS ( "Avg delete:", fmtNs ( s.avgDeleteNs ) ) );
 
-            status = "Hash-table diagnostics  ("
-                     + std::to_string ( s.entries ) + " entries, "
-                     + pct ( s.loadFactor ) + " load)";
+            status = "Hash-table diagnostics  (" + std::to_string ( s.entries ) + " entries, " + pct ( s.loadFactor ) +
+                     " load)";
 
-        //  ADD
+            //  ADD
         } else if ( cmd == "1" || cmd == "ADD" ) {
-            auto name   = input_screen ( output, "ADD \u2013 enter stock details", "Stock name:" );
-            auto wkn    = input_screen ( output, "ADD \u2013 " + name, "WKN:" );
+            auto name = input_screen ( output, "ADD \u2013 enter stock details", "Stock name:" );
+            auto wkn = input_screen ( output, "ADD \u2013 " + name, "WKN:" );
             auto symbol = input_screen ( output, "ADD \u2013 " + name, "Symbol:" );
             try {
                 auto s = std::make_unique<Stock> ( name, wkn, symbol );
-                ht.ht_insert ( name,   s.get() );
+                ht.ht_insert ( name, s.get() );
                 ht.ht_insert ( symbol, s.get() );
                 owner.push_back ( std::move ( s ) );
                 status = "Added: " + name + "  (" + symbol + ")";
@@ -168,26 +179,25 @@ void run_menu ( HashTable &ht, owner_t &owner ) {
                 status = std::string ( "Error: " ) + e.what();
             }
 
-        //  DEL
+            //  DEL
         } else if ( cmd == "2" || cmd == "DEL" ) {
             auto key = input_screen ( output, status, "Name or symbol to delete:" );
             if ( Stock *st = ht.ht_lookup ( key ) ) {
-                std::string name   = st->getName();
+                std::string name = st->getName();
                 std::string symbol = st->getSymbol();
                 ht.ht_delete ( name );
                 ht.ht_delete ( symbol );
                 owner.erase (
-                    std::remove_if ( owner.begin(), owner.end(),
-                                     [ & ] ( const auto &p ) { return p.get() == st; } ),
+                    std::remove_if ( owner.begin(), owner.end(), [ & ] ( const auto &p ) { return p.get() == st; } ),
                     owner.end() );
                 status = "Deleted: " + name + "  (" + symbol + ")";
             } else {
                 status = "Not found: " + key;
             }
 
-        //  IMPORT
+            //  IMPORT
         } else if ( cmd == "3" || cmd == "IMPORT" ) {
-            auto key  = input_screen ( output, status, "Name or symbol:" );
+            auto key = input_screen ( output, status, "Name or symbol:" );
             auto file = input_screen ( output, "IMPORT \u2013 " + key, "CSV file path:" );
             if ( Stock *st = ht.ht_lookup ( key ) ) {
                 try {
@@ -200,21 +210,21 @@ void run_menu ( HashTable &ht, owner_t &owner ) {
                 status = "Stock not found: " + key;
             }
 
-        //  SEARCH
+            //  SEARCH
         } else if ( cmd == "4" || cmd == "SEARCH" ) {
             auto key = input_screen ( output, status, "Name or symbol:" );
             if ( const Stock *st = ht.ht_lookup ( key ) ) {
-                output.push_back ( "  Name:   " + st->getName()   );
+                output.push_back ( "  Name:   " + st->getName() );
                 output.push_back ( "  Symbol: " + st->getSymbol() );
-                output.push_back ( "  WKN:    " + st->getWKN()    );
+                output.push_back ( "  WKN:    " + st->getWKN() );
                 if ( st->hasHistory() ) {
                     const auto &e = st->latest();
                     output.push_back ( "" );
                     output.push_back ( "  Latest  (" + e.date + ")" );
-                    output.push_back ( "    Open:   " + std::to_string ( e.open   ) );
-                    output.push_back ( "    High:   " + std::to_string ( e.high   ) );
-                    output.push_back ( "    Low:    " + std::to_string ( e.low    ) );
-                    output.push_back ( "    Close:  " + std::to_string ( e.close  ) );
+                    output.push_back ( "    Open:   " + std::to_string ( e.open ) );
+                    output.push_back ( "    High:   " + std::to_string ( e.high ) );
+                    output.push_back ( "    Low:    " + std::to_string ( e.low ) );
+                    output.push_back ( "    Close:  " + std::to_string ( e.close ) );
                     output.push_back ( "    Volume: " + std::to_string ( e.volume ) );
                 } else {
                     output.push_back ( "" );
@@ -225,7 +235,7 @@ void run_menu ( HashTable &ht, owner_t &owner ) {
                 status = "Not found: " + key;
             }
 
-        //  PLOT
+            //  PLOT
         } else if ( cmd == "5" || cmd == "PLOT" ) {
             auto key = input_screen ( output, status, "Name or symbol:" );
             if ( const Stock *st = ht.ht_lookup ( key ) ) {
@@ -235,12 +245,12 @@ void run_menu ( HashTable &ht, owner_t &owner ) {
                 status = "Not found: " + key;
             }
 
-        //  LIST
+            //  LIST
         } else if ( cmd == "6" || cmd == "LIST" ) {
             output = ht.listAll();
             status = std::to_string ( ht.size() ) + " stock(s) in table";
 
-        //  SAVE
+            //  SAVE
         } else if ( cmd == "7" || cmd == "SAVE" ) {
             auto file = input_screen ( output, status, "Save to file:" );
             try {
@@ -250,14 +260,14 @@ void run_menu ( HashTable &ht, owner_t &owner ) {
                 status = std::string ( "Error: " ) + e.what();
             }
 
-        //  LOAD
+            //  LOAD
         } else if ( cmd == "8" || cmd == "LOAD" ) {
             auto file = input_screen ( output, status, "Load from file:" );
             try {
                 auto stocks = ht.load ( file );
                 std::size_t n = stocks.size();
                 for ( auto &s : stocks ) {
-                    ht.ht_insert ( s->getName(),   s.get() );
+                    ht.ht_insert ( s->getName(), s.get() );
                     ht.ht_insert ( s->getSymbol(), s.get() );
                     owner.push_back ( std::move ( s ) );
                 }
@@ -266,7 +276,7 @@ void run_menu ( HashTable &ht, owner_t &owner ) {
                 status = std::string ( "Error: " ) + e.what();
             }
 
-        //  unknown
+            //  unknown
         } else if ( !cmd.empty() ) {
             status = "Unknown command: " + cmd;
         }

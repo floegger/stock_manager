@@ -2,15 +2,14 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
-#include <sstream>
 #include <string>
 #include <vector>
 
 /* Constants for plot dimensions - 1 column = 1 char */
 static constexpr int INNER_W = 70;
-static constexpr int YLABEL_W = 10;                // max 10 chars
-static constexpr int PLOT_W = INNER_W - YLABEL_W;  // 52 columns for data
-static constexpr int PLOT_ROWS = 14;               // number of price rows
+static constexpr int YLABEL_W = 10;  // max 10 chars
+static constexpr int PLOT_W = INNER_W - YLABEL_W;
+static constexpr int PLOT_ROWS = 14;  // number of price rows
 
 // helpers
 

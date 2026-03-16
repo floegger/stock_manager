@@ -16,7 +16,7 @@ class Stock {
     const std::string &getSymbol () const noexcept { return symbol_; }
     bool hasHistory () const noexcept { return !history_.empty(); }
     const PriceEntry &latest () const;
-    const std::vector<PriceEntry> &history () const noexcept { return history_; }
+    const std::vector<PriceEntry> &history () const noexcept { return history_; }  // returns ref to history vector
 
     void importCSV ( const std::string &filename );
     void saveToFile ( std::ostream &outputStram ) const;

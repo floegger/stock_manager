@@ -59,10 +59,12 @@ class HashTable {
     static uint8_t fingerprint ( uint64_t hash ) noexcept;
     std::ptrdiff_t probe ( const std::string &key, uint64_t hash, bool insert ) const noexcept;
     void rehash ( std::size_t newCapacity );
+    static std::size_t pow2 ( std::size_t n ); // rounds up to the next power of 2
 
     std::vector<uint8_t> ctrl_;
     std::vector<Entry> entries_;
     std::size_t size_ = 0;
+    std::size_t mask_ = 0;
 
 
 };  // Class HashTable

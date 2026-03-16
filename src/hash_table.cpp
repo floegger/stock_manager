@@ -1,7 +1,6 @@
 #include "../include/hash_table.h"
 
 #include <algorithm>
-#include <chrono>
 #include <cstddef>
 #include <fstream>
 #include <iomanip>
@@ -13,7 +12,10 @@
 #include <immintrin.h>
 #endif
 
-HashTable::HashTable ( std::size_t capacity ) : ctrl_ ( capacity, EMPTY ), entries_ ( capacity ), size_ ( 0 ) {
+/* performance enhancements:
+ *  - replace '%capacity' with '& mask_' 20-80 CPU cycles vs. 1 cycle
+ */
+HashTable::HashTable ( std::size_t capacity ) : ctrl_ ( pow2 ( capacity ), EMPTY ), entries_ ( pow2 ( capacity ) ), size_ ( 0 ), mask_ ( pow2 ( capacity ) - 1 ) {
     if ( capacity == 0 ) {
         throw std::invalid_argument ( "Capacity must be > 0" );
     }
@@ -38,11 +40,11 @@ uint8_t HashTable::fingerprint ( uint64_t hash ) noexcept {
 
 // insert = true -> insert, insert = false -> lookup
 std::ptrdiff_t HashTable::probe ( const std::string &key, uint64_t hash, bool insert ) const noexcept {
-    const std::size_t capacity = ctrl_.size();
+
     const uint8_t fp = fingerprint ( hash );
 
 #ifdef __AVX2__
-    std::size_t group = ( hash % capacity ) & ~( GROUP_SIZE - 1 );  // Align to group boundary
+    std::size_t group = ( hash & mask_ ) & ~( GROUP_SIZE - 1 );  // Align to group boundary
     __m256i fpVec = _mm256_set1_epi8 ( fp );
     __m256i emptyVec = _mm256_set1_epi8 ( static_cast<char> ( EMPTY ) );
 
@@ -55,7 +57,7 @@ std::ptrdiff_t HashTable::probe ( const std::string &key, uint64_t hash, bool in
 
         // check candidates
         for ( uint32_t mask = matchMask; mask != 0; mask &= ( mask - 1 ) ) {
-            std::ptrdiff_t idx = ( group + static_cast<std::size_t> ( __builtin_ctz ( mask ) ) ) % capacity;
+            std::ptrdiff_t idx = ( group + static_cast<std::size_t> ( __builtin_ctz ( mask ) ) ) & mask_;
 
             if ( entries_[ idx ].hash == hash && entries_[ idx ].key == key ) {
                 return static_cast<std::ptrdiff_t> ( idx );  // Found
@@ -64,7 +66,7 @@ std::ptrdiff_t HashTable::probe ( const std::string &key, uint64_t hash, bool in
         // record first tombstone for this group
         if ( insert && firstTombstone == -1 ) {
             for ( std::size_t i = 0; i < GROUP_SIZE; ++i ) {
-                std::size_t idx = ( group + i ) % capacity;
+                std::size_t idx = ( group + i ) & mask_;
                 if ( ctrl_[ idx ] == DELETED ) {
                     firstTombstone = static_cast<std::ptrdiff_t> ( idx );
                     break;
@@ -75,13 +77,13 @@ std::ptrdiff_t HashTable::probe ( const std::string &key, uint64_t hash, bool in
         if ( emptyMask ) {
             if ( !insert )
                 return -1;  // Not found
-            std::size_t slot = ( group + static_cast<std::size_t> ( __builtin_ctz ( emptyMask ) ) ) % capacity;
+            std::size_t slot = ( group + static_cast<std::size_t> ( __builtin_ctz ( emptyMask ) ) ) & mask_;
             return firstTombstone != -1 ? firstTombstone : static_cast<std::ptrdiff_t> ( slot );  // Insert here
         }
-        group = ( group + GROUP_SIZE ) % capacity;  // Move to next group
+        group = ( group + GROUP_SIZE ) & mask_;  // Move to next group
     }
 #else  // Fallback to scalar probing
-    std::size_t group = ( hash % capacity ) & ~( GROUP_SIZE - 1 );  // Align to group boundary
+    std::size_t group = ( hash & mask_ ) & ~( GROUP_SIZE - 1 );  // Align to group boundary
     std::ptrdiff_t firstTombstone = -1;
 
     for ( ;; ) {
@@ -89,7 +91,7 @@ std::ptrdiff_t HashTable::probe ( const std::string &key, uint64_t hash, bool in
         std::size_t emptyIdx = 0;
 
         for ( std::size_t i = 0; i < GROUP_SIZE; ++i ) {
-            std::size_t idx = ( group + i ) % capacity;
+            std::size_t idx = ( group + i ) & mask_;
             uint8_t c = ctrl_[ idx ];
 
             if ( c == EMPTY ) {
@@ -111,7 +113,7 @@ std::ptrdiff_t HashTable::probe ( const std::string &key, uint64_t hash, bool in
                 return -1;  // Not found
             return firstTombstone != -1 ? firstTombstone : static_cast<std::ptrdiff_t> ( emptyIdx );  // Insert here
         }
-        group = ( group + GROUP_SIZE ) % capacity;  // Move to next group
+        group = ( group + GROUP_SIZE ) & mask_;  // Move to next group
     }  // end probeloop
 #endif
 }  // probe
@@ -124,6 +126,8 @@ void HashTable::ht_insert ( const std::string &key, Stock *stock ) {
     uint64_t hash = hashString ( key );
     auto idx = static_cast<std::size_t> ( probe ( key, hash, true ) );
     if ( ctrl_[ idx ] == EMPTY || ctrl_[ idx ] == DELETED ) {
+        if ( ctrl_[ idx ] == DELETED )
+            --deleted_;  // Reusing a tombstone slot, decrement counter
         Entry tmp;
         tmp.key = key;
         tmp.hash = hash;
@@ -136,6 +140,8 @@ void HashTable::ht_insert ( const std::string &key, Stock *stock ) {
     ctrl_[ idx ] = fingerprint ( hash );
 }  // ht_insert
 
+/* === lookup === */
+
 Stock *HashTable::ht_lookup ( const std::string &key ) const {
     uint64_t hash = hashString ( key );
     auto idx = probe ( key, hash, false );
@@ -144,6 +150,8 @@ Stock *HashTable::ht_lookup ( const std::string &key ) const {
     }
     return nullptr;  // Not found
 }  // ht_lookup
+
+/* === delete === */
 
 bool HashTable::ht_delete ( const std::string &key ) {
     uint64_t hash = hashString ( key );
@@ -179,7 +187,8 @@ void HashTable::rehash ( std::size_t newCapacity ) {
     ctrl_     = std::move ( newTable.ctrl_ );
     entries_  = std::move ( newTable.entries_ );
     size_     = newTable.size_;
-    deleted_ = 0; // reset tombstone counter
+    mask_     = ctrl_.size() - 1;  // Update mask for new capacity
+    deleted_  = 0; // reset tombstone counter
 }  // rehash
 
 // === List all entries ===
@@ -205,16 +214,6 @@ std::vector<std::string> HashTable::listAll () const {
                     return a->getName() < b->getName();
                 } );
 
-    // ── measure column widths ────────────────────────────────────────────────
-    // Fixed widths that fit comfortably inside the 62-col TUI panel:
-    //   #    : 3   (right-aligned index)
-    //   name : up to 24 (left-aligned, truncated)
-    //   sym  : 6   (left-aligned)
-    //   wkn  : 8   (left-aligned)
-    //   close: 9   (right-aligned "XXXXXX.XX")
-    //   date : 10  (YYYY-MM-DD)
-    // Total with separators:  3 + 1 + 24 + 1 + 6 + 1 + 8 + 1 + 9 + 2 + 10 = 66
-    // We keep name to 22 to land at 62.
 
     static constexpr int W_NAME  = 22;
     static constexpr int W_SYM   =  6;
@@ -252,7 +251,6 @@ std::vector<std::string> HashTable::listAll () const {
     }
 
     // ── rows ─────────────────────────────────────────────────────────────────
-    int idx = 1;
     for ( const Stock *s : stocks ) {
         std::ostringstream row;
 
@@ -277,7 +275,6 @@ std::vector<std::string> HashTable::listAll () const {
         }
 
         lines.push_back ( row.str() );
-        ++idx;
     }
 
     // ── footer ───────────────────────────────────────────────────────────────
@@ -326,4 +323,17 @@ std::vector<std::unique_ptr<Stock>> HashTable::load ( const std::string &filenam
     }
 
     return result;
+}
+
+std::size_t HashTable::pow2 ( std::size_t n ) {
+    if ( n == 0 ) return 1;
+    --n;
+    n |= n >> 1;
+    n |= n >> 2;
+    n |= n >> 4;
+    n |= n >> 8;
+    n |= n >> 16;
+    n |= n >> 32;
+
+    return n + 1;
 }

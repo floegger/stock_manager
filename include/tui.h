@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-static constexpr int WIDTH = 62;  // inner content width (between the │ borders)
+static constexpr int WIDTH = 70;  // inner content width (between the │ borders)
 
 void top_border ();
 void mid_border ();

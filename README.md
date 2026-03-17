@@ -1,6 +1,13 @@
 # Stock Manager
 
-a simple cli stock manager written in c++
+a simple cli stock manager written in c++ that uses a high-performance Swiss-Table-style hash table that uses AVX2 to manage stock data.
+
+## Design Features:
+
+- open adressing with metadata byte
+- tomnstone reuse
+- (optional) AVX2 vector search ( compare 32 bytes simultaniously )
+- plot historical price data ( ASCI Plot )
 
 ## build with make:
 
@@ -37,5 +44,6 @@ avx2 requires a cpu and compiler support. If you get an error about avx2 not bei
 7 SAVE - save the database to a file
 8 LOAD - load the database from a file
 9 QUIT
+B BATCH - batch import stock prices from a folder
 
 Enter number or string ( 0-9 or command name ):

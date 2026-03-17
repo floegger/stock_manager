@@ -7,9 +7,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <vector>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 class HashTable {
   public:
@@ -42,9 +42,9 @@ class HashTable {
     TableStats tableStats ( int benchRounds = 200 ) const;
 
   private:
-    static constexpr double MAX_LOAD = 0.75;
+    static constexpr double MAX_LOAD = 0.90;
     static constexpr std::size_t GROUP_SIZE = 32;
-    static constexpr double MAX_TOMB = .20; // threshold for rehashing on delete
+    static constexpr double MAX_TOMB = .20;  // threshold for rehashing on delete
 
     std::size_t deleted_ = 0;
 
@@ -59,13 +59,12 @@ class HashTable {
     static uint8_t fingerprint ( uint64_t hash ) noexcept;
     std::ptrdiff_t probe ( const std::string &key, uint64_t hash, bool insert ) const noexcept;
     void rehash ( std::size_t newCapacity );
-    static std::size_t pow2 ( std::size_t n ); // rounds up to the next power of 2
+    static std::size_t pow2 ( std::size_t n );  // rounds up to the next power of 2
 
     std::vector<uint8_t> ctrl_;
     std::vector<Entry> entries_;
     std::size_t size_ = 0;
     std::size_t mask_ = 0;
-
 
 };  // Class HashTable
 

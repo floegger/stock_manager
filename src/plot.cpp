@@ -119,10 +119,6 @@ std::vector<std::string> plotStock ( const Stock &stock ) {
         lines.push_back ( rule );
     }
 
-    // ── 7. date labels on x-axis ─────────────────────────────────────────────
-    // Pick ~4 evenly-spaced tick positions and render their dates.
-    // Dates are printed left-aligned from the tick column; we clip if they
-    // would overlap with the next one or run off the right edge.
     {
         // Number of date ticks we want (including first and last).
         static constexpr int XTICKS = 3;

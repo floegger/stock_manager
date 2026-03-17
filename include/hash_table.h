@@ -42,7 +42,7 @@ class HashTable {
     TableStats tableStats ( int benchRounds = 200 ) const;
 
   private:
-    static constexpr double MAX_LOAD = 0.90;
+    static constexpr double MAX_LOAD = 0.75;
     static constexpr std::size_t GROUP_SIZE = 32;
     static constexpr double MAX_TOMB = .20;  // threshold for rehashing on delete
 
